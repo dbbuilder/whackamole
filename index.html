@@ -7,52 +7,12 @@
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
   <style>
-    body {
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      font-family: 'Orbitron', sans-serif; /* Futuristic font */
-      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); /* Gradient background */
-      color: white;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-    }
-
-    #game-title-container {
-      text-align: center;
-      margin-top: 10px;
-      font-size: 32px;
-      font-weight: bold;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-    }
-
-    #game-container {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 2px solid #ffffff;
-      box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
-    }
-
-    canvas {
-      display: block;
-      margin: auto;
-    }
-
-    @media (max-width: 768px) {
-      #game-title-container {
-        font-size: 24px;
-      }
-    }
   </style>
 </head>
 <body>
   <!-- Configurable Title -->
   <div id="game-title-container">
-    <h1 id="game-title">Nail a Beaver</h1>
+    <h1 id="game-title">Whack-a-Mole Game</h1>
   </div>
 
   <!-- Game Container -->
@@ -61,9 +21,13 @@
   <script>
 const config = {
   type: Phaser.AUTO,
-  width: 800,
-  height: 600,
   parent: 'game-container',
+  width: window.innerWidth, // Dynamic width
+  height: window.innerHeight, // Dynamic height
+  scale: {
+    mode: Phaser.Scale.RESIZE, // Resize dynamically
+    autoCenter: Phaser.Scale.CENTER_BOTH
+  },
   physics: { default: 'arcade' },
   scene: {
     preload: preload,
@@ -72,11 +36,11 @@ const config = {
   }
 };
 
+
 const game = new Phaser.Game(config);
 
 let score = 0;
 let scoreText;
-let titleText;
 let timerText;
 let levelText;
 let moles = [];
@@ -98,20 +62,24 @@ function create() {
   const bgMusic = this.sound.add('bg-music', { loop: true });
   bgMusic.play();
 
-  // Display title, score, level, and timer
-  titleText = this.add.text(300, 20, 'Nail a Beaver', { fontSize: '32px', fill: '#FFF' });
-  scoreText = this.add.text(10, 10, 'Score: 0', { fontSize: '24px', fill: '#FFF' });
-  levelText = this.add.text(10, 40, 'Level: 1', { fontSize: '24px', fill: '#FFF' });
-  timerText = this.add.text(400, 570, 'Time: 60', { fontSize: '24px', fill: '#FFF' });
+  // Display score, level, and timer at top
+  scoreText = this.add.text(20, 20, 'Score: 0', { fontSize: '24px', fill: '#FFF' });
+  levelText = this.add.text(20, 50, 'Level: 1', { fontSize: '24px', fill: '#FFF' });
+  timerText = this.add.text(20, 80, 'Time: 60', { fontSize: '24px', fill: '#FFF' });
 
   const rows = 3;
   const cols = 3;
-  const holeSize = 150;
-  const moleSize = 120;
-  const padding = 10;
-  const startX = (800 - (cols * (holeSize + padding) - padding)) / 2 +100; // Center horizontally
-  const startY = (600 - (rows * (holeSize + padding) - padding)) / 2 + 100; // Shift vertically down by 50px
+  const containerWidth = this.scale.width;   // Get dynamic container width
+const containerHeight = this.scale.height; // Get dynamic container height
+// Calculate hole and mole size dynamically based on screen size
+const gridSize = Math.min(this.scale.width, this.scale.height) * 0.75   ; // 80% of screen
+const holeSize = gridSize / 3.5; // Fit 3 holes per row with padding
+const moleSize = holeSize * 0.8; // Moles slightly smaller than holes
+const padding = holeSize * 0.1; // Padding is 10% of hole size
 
+// Calculate dynamic centering
+const startX = (this.scale.width - (cols * (holeSize + padding) - padding)) / 2;
+const startY = (this.scale.height - (rows * (holeSize + padding) - padding)) / 2; 
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
       const x = startX + col * (holeSize + padding);
@@ -125,7 +93,7 @@ function create() {
       mole.setInteractive();
       mole.setVisible(false);
       mole.isGolden = false;
-      mole.on('pointerdown', () => hitMole(mole));
+      mole.on('pointerdown', () => hitMole.call(this, mole));
       moles.push(mole);
     }
   }
@@ -150,13 +118,9 @@ function update() {}
 
 function showRandomMole() {
   const mole = Phaser.Utils.Array.GetRandom(moles);
-
-  // 20% chance to spawn a golden mole
   mole.isGolden = Math.random() < 0.2;
   mole.setTexture(mole.isGolden ? 'golden-mole' : 'mole');
-
   mole.setVisible(true);
-
   this.time.delayedCall(800 - level * 50, () => {
     mole.setVisible(false);
   });
@@ -164,13 +128,12 @@ function showRandomMole() {
 
 function hitMole(mole) {
   if (mole.visible) {
-    const points = mole.isGolden ? 2 : 1; // Golden moles give double points
+    const points = mole.isGolden ? 2 : 1;
     score += points;
     scoreText.setText('Score: ' + score);
     mole.setVisible(false);
     this.sound.play('hit');
 
-    // Level up every 10 points
     if (score % 10 === 0) {
       level++;
       levelText.setText('Level: ' + level);
