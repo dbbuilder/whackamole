@@ -29,6 +29,7 @@ body {
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
     position: relative;
     height: 100%; /* Make the game space fill full height */
+    background: #0000FF; /* Electric Royal Blue background */
   }
 
   canvas {
