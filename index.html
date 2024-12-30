@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Whack-a-Mole Game</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: 'Orbitron', sans-serif; /* Futuristic font */
+      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); /* Gradient background */
+      color: white;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    #game-title-container {
+      text-align: center;
+      margin-top: 10px;
+      font-size: 32px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    #game-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
+    }
+
+    canvas {
+      display: block;
+      margin: auto;
+    }
+
+    @media (max-width: 768px) {
+      #game-title-container {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Configurable Title -->
+  <div id="game-title-container">
+    <h1 id="game-title">Whack-a-Mole Game</h1>
+  </div>
+
+  <!-- Game Container -->
+  <div id="game-container"></div>
+
+  <script>
+const config = {
+  type: Phaser.AUTO,
+  width: 800,
+  height: 600,
+  parent: 'game-container',
+  physics: { default: 'arcade' },
+  scene: {
+    preload: preload,
+    create: create,
+    update: update
+  }
+};
+
+const game = new Phaser.Game(config);
+
+let score = 0;
+let scoreText;
+let titleText;
+let timerText;
+let levelText;
+let moles = [];
+let moleTimer;
+let timeLeft = 60; // 60 seconds timer
+let level = 1;
+
+function preload() {
+  this.load.image('mole', 'assets/images/mole.png');
+  this.load.image('golden-mole', 'assets/images/golden-mole.png');
+  this.load.image('hole', 'assets/images/hole.png');
+  this.load.audio('hit', 'assets/sounds/hit.mp3');
+  this.load.audio('miss', 'assets/sounds/miss.mp3');
+  this.load.audio('bg-music', 'assets/sounds/bg-music.mp3');
+}
+
+function create() {
+  // Background music
+  const bgMusic = this.sound.add('bg-music', { loop: true });
+  bgMusic.play();
+
+  // Display title, score, level, and timer
+  titleText = this.add.text(300, 20, 'Whack-a-Mole Game', { fontSize: '32px', fill: '#FFF' });
+  scoreText = this.add.text(10, 10, 'Score: 0', { fontSize: '24px', fill: '#FFF' });
+  levelText = this.add.text(10, 40, 'Level: 1', { fontSize: '24px', fill: '#FFF' });
+  timerText = this.add.text(400, 570, 'Time: 60', { fontSize: '24px', fill: '#FFF' });
+
+  const rows = 3;
+  const cols = 3;
+  const holeSize = 150;
+  const moleSize = 120;
+  const padding = 10;
+  const startX = (800 - (cols * (holeSize + padding) - padding)) / 2 +100; // Center horizontally
+  const startY = (600 - (rows * (holeSize + padding) - padding)) / 2 + 100; // Shift vertically down by 50px
+
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const x = startX + col * (holeSize + padding);
+      const y = startY + row * (holeSize + padding);
+
+      // Add holes
+      this.add.image(x, y, 'hole').setDisplaySize(holeSize, holeSize);
+
+      // Add moles
+      const mole = this.add.image(x, y, 'mole').setDisplaySize(moleSize, moleSize);
+      mole.setInteractive();
+      mole.setVisible(false);
+      mole.isGolden = false;
+      mole.on('pointerdown', () => hitMole(mole));
+      moles.push(mole);
+    }
+  }
+
+  moleTimer = this.time.addEvent({
+    delay: 1000,
+    callback: showRandomMole,
+    callbackScope: this,
+    loop: true
+  });
+
+  // Countdown timer
+  this.time.addEvent({
+    delay: 1000,
+    callback: updateTimer,
+    callbackScope: this,
+    loop: true
+  });
+}
+
+function update() {}
+
+function showRandomMole() {
+  const mole = Phaser.Utils.Array.GetRandom(moles);
+
+  // 20% chance to spawn a golden mole
+  mole.isGolden = Math.random() < 0.2;
+  mole.setTexture(mole.isGolden ? 'golden-mole' : 'mole');
+
+  mole.setVisible(true);
+
+  this.time.delayedCall(800 - level * 50, () => {
+    mole.setVisible(false);
+  });
+}
+
+function hitMole(mole) {
+  if (mole.visible) {
+    const points = mole.isGolden ? 2 : 1; // Golden moles give double points
+    score += points;
+    scoreText.setText('Score: ' + score);
+    mole.setVisible(false);
+    this.sound.play('hit');
+
+    // Level up every 10 points
+    if (score % 10 === 0) {
+      level++;
+      levelText.setText('Level: ' + level);
+      moleTimer.delay = Math.max(300, 1000 - level * 50);
+    }
+  } else {
+    this.sound.play('miss');
+  }
+}
+
+function updateTimer() {
+  timeLeft--;
+  timerText.setText('Time: ' + timeLeft);
+  if (timeLeft <= 0) {
+    endGame();
+  }
+}
+
+function endGame() {
+  moleTimer.remove();
+  alert('Game Over! Final Score: ' + score);
+  location.reload();
+}
+</script>
+</body>
+</html>
