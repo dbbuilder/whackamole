@@ -9,15 +9,28 @@
     <style></style>
   </head>
   <body>
-    <!-- Configurable Title -->
-    <div id="game-title-container">
-      <h1 id="game-title">Nail a Beaver</h1>
-    </div>
+  <!-- Configurable Title -->
+  <div id="game-title-container">
+    <h1 id="game-title">Whack-a-Mole Game</h1>
+  </div>
 
     <!-- Game Container -->
     <div id="game-container"></div>
 
     <script>
+
+        // Function to get query string parameters
+function getQueryParam(param) {
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get(param);
+}
+
+// Set the game title from query string parameter
+const titleParam = getQueryParam('title');
+if (titleParam) {
+  document.getElementById('game-title').innerText = decodeURIComponent(titleParam);
+}
+
       const config = {
         type: Phaser.AUTO,
         parent: "game-container",
