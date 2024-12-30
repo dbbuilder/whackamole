@@ -82,13 +82,14 @@
         const gridSize = Math.min(this.scale.width, this.scale.height) * 0.75; // 80% of screen
         const holeSize = gridSize / 3.5; // Fit 3 holes per row with padding
         const moleSize = holeSize * 0.8; // Moles slightly smaller than holes
-        const padding = holeSize * 0.1; // Padding is 10% of hole size
+        const padding = holeSize * 0.1   ; // Padding is 10% of hole size
 
         // Calculate dynamic centering
-        const startX =
-          (this.scale.width - (cols * (holeSize + padding) - padding)) / 2;
+                const startX =
+        (this.scale.width - (cols * (holeSize + padding) - padding)) / 2 + holeSize / 2;
         const startY =
-          (this.scale.height - (rows * (holeSize + padding) - padding)) / 2;
+        (this.scale.height - (rows * (holeSize + padding) - padding)) / 2 + holeSize / 2;
+
         for (let row = 0; row < rows; row++) {
           for (let col = 0; col < cols; col++) {
             const x = startX + col * (holeSize + padding);
